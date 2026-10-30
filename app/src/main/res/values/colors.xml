@@ -4,25 +4,25 @@
   layouts can reference @color/cockpit_* directly and the theme switch costs nothing.
 -->
 <resources>
-    <color name="cockpit_bg">#FFF2F4F7</color>
-    <color name="cockpit_surface">#FFFFFFFF</color>
-    <color name="cockpit_surface_alt">#FFE6EAF0</color>
-    <color name="cockpit_divider">#33202632</color>
+    <color name="cockpit_bg">#0B0D0E</color>
+    <color name="cockpit_surface">#181B1D</color>
+    <color name="cockpit_surface_alt">#292D30</color>
+    <color name="cockpit_divider">#292D30</color>
 
-    <color name="cockpit_text_primary">#FF101418</color>
-    <color name="cockpit_text_secondary">#FF3C444F</color>
-    <color name="cockpit_text_dim">#FF6B7583</color>
+    <color name="cockpit_text_primary">#D8DADC</color>
+    <color name="cockpit_text_secondary">#969C9F</color>
+    <color name="cockpit_text_dim">#969C9F</color>
 
-    <color name="cockpit_accent">#FF0B63CE</color>
-    <color name="cockpit_accent_dim">#FF6D9BD8</color>
-    <color name="cockpit_speed">#FF0B63CE</color>
-    <color name="cockpit_badge">#FFD32F2F</color>
+    <color name="cockpit_accent">#D8DADC</color>
+    <color name="cockpit_accent_dim">#D8DADC</color>
+    <color name="cockpit_speed">#D8DADC</color>
+    <color name="cockpit_badge">#D8DADC</color>
 
-    <color name="cockpit_scrim">#F2F2F4F7</color>
-    <color name="cockpit_ripple">#33101418</color>
+    <color name="cockpit_scrim">#0B0D0E</color>
+    <color name="cockpit_ripple">#292D30</color>
 
     <!-- Translucent plates for text drawn over the map. -->
-    <color name="cockpit_hud">#E6FFFFFF</color>
-    <color name="cockpit_ok">#FF1B8A3A</color>
-    <color name="cockpit_warn">#FFB26A00</color>
+    <color name="cockpit_hud">#181B1D</color>
+    <color name="cockpit_ok">#D8DADC</color>
+    <color name="cockpit_warn">#D8DADC</color>
 </resources>

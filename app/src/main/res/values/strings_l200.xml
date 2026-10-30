@@ -1,0 +1,10 @@
+<?xml version="1.0" ?>
+<resources>
+    <string name="l200_projection">Phone Link</string>
+    <string name="l200_nav">Navegação</string>
+    <string name="l200_music">Música</string>
+    <string name="l200_radio">Rádio</string>
+    <string name="l200_apps">Aplicativos</string>
+    <string name="l200_settings">Configurações</string>
+    <string name="l200_home">Definir como tela inicial</string>
+</resources>

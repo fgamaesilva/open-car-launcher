@@ -14,6 +14,10 @@
         <item name="android:textColorPrimary">@color/cockpit_text_primary</item>
         <item name="android:textColorSecondary">@color/cockpit_text_secondary</item>
         <item name="android:windowBackground">@color/cockpit_bg</item>
+        <item name="android:statusBarColor">@color/cockpit_bg</item>
+        <item name="android:navigationBarColor">@color/cockpit_bg</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <!-- Every AlertDialog gets the cockpit palette (day and night), not stock Material colours. -->
         <item name="alertDialogTheme">@style/ThemeOverlay.CarLauncher.Alert</item>
         <item name="materialAlertDialogTheme">@style/ThemeOverlay.CarLauncher.Alert</item>

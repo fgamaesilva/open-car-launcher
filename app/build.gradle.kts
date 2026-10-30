@@ -18,7 +18,7 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.minimal.carlauncher"
+        applicationId = "com.fgama.l200launcher"
         minSdk = 29
         // NOTE: deliberately NOT targetSdk 36. Android 16 ignores android:screenOrientation for
         // apps targeting 36 on displays with smallestWidth >= 600dp - which is exactly a head unit.
@@ -27,7 +27,7 @@ android {
         versionName = "0.17"
 
         // TODO: point these at the repository that hosts the release APKs.
-        buildConfigField("String", "GITHUB_OWNER", "\"Breakeridis\"")
+        buildConfigField("String", "GITHUB_OWNER", "\"fgamaesilva\"")
         buildConfigField("String", "GITHUB_REPO", "\"open-car-launcher\"")
 
     }

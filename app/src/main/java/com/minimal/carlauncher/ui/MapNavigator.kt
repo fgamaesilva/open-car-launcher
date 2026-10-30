@@ -10,7 +10,7 @@ import androidx.lifecycle.lifecycleScope
 import com.minimal.carlauncher.R
 import com.minimal.carlauncher.core.Format
 import com.minimal.carlauncher.core.Prefs
-import com.minimal.carlauncher.databinding.ActivityHomeBinding
+import com.minimal.carlauncher.databinding.ViewLegacyDashboardBinding
 import com.minimal.carlauncher.location.VehicleState
 import com.minimal.carlauncher.map.Place
 import com.minimal.carlauncher.nav.LatLon
@@ -38,7 +38,7 @@ import java.util.Locale
  */
 class MapNavigator(
     private val activity: AppCompatActivity,
-    private val binding: ActivityHomeBinding,
+    private val binding: ViewLegacyDashboardBinding,
     private val mapView: MapView,
     /** Adds an overlay below the car arrow. */
     private val addOverlayBelowCar: (Overlay) -> Unit,
