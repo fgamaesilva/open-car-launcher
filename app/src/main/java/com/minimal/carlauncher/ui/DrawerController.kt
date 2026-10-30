@@ -26,8 +26,7 @@ class DrawerController(
     private val activity: Activity,
     private val binding: ActivityHomeBinding,
     private val repository: AppRepository,
-    scope: CoroutineScope,
-    private val onPinRequested: (AppEntry) -> Unit
+    scope: CoroutineScope
 ) {
 
     private val adapter = AppGridAdapter(
@@ -115,7 +114,6 @@ class DrawerController(
     private fun showActions(entry: AppEntry) {
         val options = arrayOf(
             activity.getString(R.string.action_open),
-            activity.getString(R.string.action_pin_to_dock),
             activity.getString(R.string.action_app_info)
         )
         AlertDialog.Builder(activity)
@@ -123,8 +121,7 @@ class DrawerController(
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> launch(entry, binding.appGrid)
-                    1 -> onPinRequested(entry)
-                    2 -> IntentUtil.openAppDetails(activity, entry.packageName)
+                    1 -> IntentUtil.openAppDetails(activity, entry.packageName)
                 }
             }
             .setNegativeButton(R.string.action_cancel, null)

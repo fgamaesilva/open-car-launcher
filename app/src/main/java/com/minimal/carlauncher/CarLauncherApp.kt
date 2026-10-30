@@ -15,7 +15,6 @@ import java.io.StringWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import org.osmdroid.config.Configuration as OsmConfiguration
 
 class CarLauncherApp : Application() {
 
@@ -27,8 +26,7 @@ class CarLauncherApp : Application() {
     lateinit var updateRepository: UpdateRepository
         private set
 
-    lateinit var radioRepository: RadioRepository
-        private set
+    val radioRepository: RadioRepository by lazy { RadioRepository(this) }
 
     /**
      * Held in memory rather than in prefs so the dashcam is started once per launcher process.
@@ -44,7 +42,7 @@ class CarLauncherApp : Application() {
 
         // Applied before any activity exists, so the very first inflate already uses the
         // right resources - no theme flash, no recreate at boot.
-        AppCompatDelegate.setDefaultNightMode(Prefs.themeMode)
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
 
         installCrashLogger()
 
@@ -53,30 +51,9 @@ class CarLauncherApp : Application() {
 
         updateRepository = UpdateRepository(this, appScope)
 
-        // App-scoped so the last station and the session binding survive activity recreates.
-        radioRepository = RadioRepository(this)
+        // Radio sessions are never initialized by the L200 home.
 
-        configureMapTiles()
-    }
-
-    /**
-     * osmdroid defaults to a tile cache on external storage (which would need a storage
-     * permission) and to the generic "osmdroid" user agent, which the OpenStreetMap tile
-     * servers block. Both are overridden before any MapView exists.
-     *
-     * Two download threads, not the default eight: the T507 / A133 class of SoC and its
-     * typical phone-hotspot connection are both easily saturated, and a stalled UI thread on
-     * the home screen is worse than tiles arriving a moment later.
-     */
-    private fun configureMapTiles() {
-        OsmConfiguration.getInstance().apply {
-            userAgentValue = "${BuildConfig.APPLICATION_ID}/${BuildConfig.VERSION_NAME}"
-            osmdroidBasePath = File(filesDir, "osmdroid")
-            osmdroidTileCache = File(cacheDir, "osm-tiles")
-            tileFileSystemCacheMaxBytes = 300L * 1024L * 1024L
-            tileFileSystemCacheTrimBytes = 240L * 1024L * 1024L
-            tileDownloadThreads = 2
-        }
+        // Legacy map remains dormant in L200.
     }
 
     /**

@@ -16,7 +16,7 @@ import com.minimal.carlauncher.R
 import com.minimal.carlauncher.core.Prefs
 import com.minimal.carlauncher.core.RadioFrequency
 import com.minimal.carlauncher.data.AppRepository
-import com.minimal.carlauncher.databinding.ActivityHomeBinding
+import com.minimal.carlauncher.databinding.ViewLegacyDashboardBinding
 import com.minimal.carlauncher.radio.ApkInspector
 import com.minimal.carlauncher.radio.MediaSessionListener
 import com.minimal.carlauncher.radio.RadioRepository
@@ -35,7 +35,7 @@ import kotlinx.coroutines.launch
  */
 class RadioWidgetController(
     private val activity: AppCompatActivity,
-    private val binding: ActivityHomeBinding,
+    private val binding: ViewLegacyDashboardBinding,
     private val radio: RadioRepository,
     private val apps: AppRepository,
     private val scope: CoroutineScope

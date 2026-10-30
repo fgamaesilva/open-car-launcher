@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Night cockpit: near-black so the display does not wash out the windscreen after dark. -->
 <resources>
-    <color name="cockpit_bg">#FF07090C</color>
-    <color name="cockpit_surface">#FF141A22</color>
-    <color name="cockpit_surface_alt">#FF1E262F</color>
-    <color name="cockpit_divider">#33FFFFFF</color>
+    <color name="cockpit_bg">#0B0D0E</color>
+    <color name="cockpit_surface">#181B1D</color>
+    <color name="cockpit_surface_alt">#292D30</color>
+    <color name="cockpit_divider">#292D30</color>
 
-    <color name="cockpit_text_primary">#FFF2F5F8</color>
-    <color name="cockpit_text_secondary">#FFC2CCD8</color>
-    <color name="cockpit_text_dim">#FF7C8795</color>
+    <color name="cockpit_text_primary">#D8DADC</color>
+    <color name="cockpit_text_secondary">#969C9F</color>
+    <color name="cockpit_text_dim">#969C9F</color>
 
-    <color name="cockpit_accent">#FF41C7F0</color>
-    <color name="cockpit_accent_dim">#FF2A6E85</color>
-    <color name="cockpit_speed">#FF41C7F0</color>
-    <color name="cockpit_badge">#FFFF5252</color>
+    <color name="cockpit_accent">#D8DADC</color>
+    <color name="cockpit_accent_dim">#D8DADC</color>
+    <color name="cockpit_speed">#D8DADC</color>
+    <color name="cockpit_badge">#D8DADC</color>
 
-    <color name="cockpit_scrim">#F207090C</color>
-    <color name="cockpit_ripple">#33FFFFFF</color>
+    <color name="cockpit_scrim">#0B0D0E</color>
+    <color name="cockpit_ripple">#292D30</color>
 
-    <color name="cockpit_hud">#E607090C</color>
-    <color name="cockpit_ok">#FF4CD964</color>
-    <color name="cockpit_warn">#FFFFB020</color>
+    <color name="cockpit_hud">#181B1D</color>
+    <color name="cockpit_ok">#D8DADC</color>
+    <color name="cockpit_warn">#D8DADC</color>
 </resources>

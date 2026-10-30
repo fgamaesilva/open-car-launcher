@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.minimal.carlauncher.R
 import com.minimal.carlauncher.core.Format
 import com.minimal.carlauncher.core.Prefs
-import com.minimal.carlauncher.databinding.ActivityHomeBinding
+import com.minimal.carlauncher.databinding.ViewLegacyDashboardBinding
 import com.minimal.carlauncher.map.GeocodingClient
 import com.minimal.carlauncher.map.Place
 import com.minimal.carlauncher.nav.Geo
@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
  */
 class MapSearchPanel(
     private val activity: AppCompatActivity,
-    private val binding: ActivityHomeBinding,
+    private val binding: ViewLegacyDashboardBinding,
     private val onPicked: (Place) -> Unit
 ) {
 

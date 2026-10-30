@@ -14,7 +14,7 @@ object Constants {
     val GITHUB_REPO: String = BuildConfig.GITHUB_REPO
 
     val isUpdaterConfigured: Boolean
-        get() = !GITHUB_OWNER.startsWith("TODO_") && !GITHUB_REPO.startsWith("TODO_")
+        get() = false // L200 builds never check or install upstream releases.
 
     const val FILE_PROVIDER_SUFFIX = ".fileprovider"
 

@@ -14,7 +14,7 @@ import com.minimal.carlauncher.R
 import com.minimal.carlauncher.core.Constants
 import com.minimal.carlauncher.core.Format
 import com.minimal.carlauncher.core.Prefs
-import com.minimal.carlauncher.databinding.ActivityHomeBinding
+import com.minimal.carlauncher.databinding.ViewLegacyDashboardBinding
 import com.minimal.carlauncher.location.VehicleState
 import com.minimal.carlauncher.map.GeocodingClient
 import com.minimal.carlauncher.map.Place
@@ -44,7 +44,7 @@ import kotlin.math.abs
  */
 class MapPortalController(
     private val activity: AppCompatActivity,
-    private val binding: ActivityHomeBinding,
+    private val binding: ViewLegacyDashboardBinding,
     private val isMoving: () -> Boolean
 ) {
 

@@ -119,6 +119,7 @@ class UpdateRepository(
     }
 
     fun download(release: ReleaseInfo) {
+        if (!Constants.isUpdaterConfigured) return
         if (!release.hasApk) {
             _state.value = UpdateState.Error("This release has no APK attached")
             return

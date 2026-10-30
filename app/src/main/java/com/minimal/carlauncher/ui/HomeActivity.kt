@@ -1,417 +1,116 @@
 package com.minimal.carlauncher.ui
 
-import android.Manifest
 import android.content.Intent
-import android.content.res.Configuration
-import android.provider.AlarmClock
 import android.os.Bundle
 import android.os.SystemClock
-import android.view.HapticFeedbackConstants
-import android.view.View
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.minimal.carlauncher.CarLauncherApp
 import com.minimal.carlauncher.R
-import com.minimal.carlauncher.core.Format
 import com.minimal.carlauncher.core.Prefs
 import com.minimal.carlauncher.databinding.ActivityHomeBinding
-import com.minimal.carlauncher.location.HeadingSource
-import com.minimal.carlauncher.location.VehicleState
-import com.minimal.carlauncher.update.ApkInstaller
-import com.minimal.carlauncher.update.UpdateState
+import com.minimal.carlauncher.core.RadioFrequency
 import com.minimal.carlauncher.util.IntentUtil
 import kotlinx.coroutines.launch
 
-/**
- * The HOME activity.
- *
- * Nothing heavy or fallible happens in onCreate: the app list loads asynchronously and every
- * pref decode falls back to defaults. A launcher that throws here on a head unit with no
- * second home app leaves the device recoverable only over adb.
- */
+/** Offline HOME: no vehicle ViewModel, location, map, tuner session or updater. */
 class HomeActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityHomeBinding
-    private val viewModel: HomeViewModel by viewModels()
-
-    private lateinit var dock: DockController
     private lateinit var drawer: DrawerController
     private lateinit var cards: QuickCardsController
-    private lateinit var map: MapPortalController
-    private lateinit var radioWidget: RadioWidgetController
-
     private val app: CarLauncherApp get() = application as CarLauncherApp
-
-    private var lastCardinal: String? = null
-    private var leftAtElapsedMs = 0L
-
-    private val locationPermission = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { _ ->
-        viewModel.onPermissionResult()
-    }
-
-    private val unknownSources = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { _ ->
-        // The user may have declined; re-check rather than assuming.
-        val state = app.updateRepository.state.value
-        if (state is UpdateState.ReadyToInstall && ApkInstaller.canInstall(this)) {
-            ApkInstaller.install(this, state.file)?.let { toast(it) }
-        }
-    }
+    private var leftAt = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityHomeBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        val repository = app.appRepository
-
-        dock = DockController(this, binding.dockStrip, repository, lifecycleScope)
-        drawer = DrawerController(this, binding, repository, lifecycleScope) { entry ->
-            dock.pin(entry)
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime())
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
         }
-        cards = QuickCardsController(this, binding, repository, lifecycleScope)
-        map = MapPortalController(this, binding) { isMoving() }
-        radioWidget = RadioWidgetController(
-            this, binding, app.radioRepository, repository, lifecycleScope
-        )
-
-        dock.bind()
+        drawer = DrawerController(this, binding, app.appRepository, lifecycleScope)
+        cards = QuickCardsController(this, binding, app.appRepository, lifecycleScope)
         drawer.bind()
         cards.bind()
-        map.bind()
-        radioWidget.bind()
-
-        bindDashboardClicks()
-        bindDockActions()
-        bindBackBehaviour()
-        observe()
-    }
-
-    // ------------------------------------------------------------------ wiring
-
-    private fun bindDashboardClicks() {
-        binding.gaugeSpeed.setOnClickListener { view ->
-            val state = viewModel.vehicle.value
-            when {
-                !state.permissionGranted -> requestLocation()
-                !state.gpsEnabled -> IntentUtil.openLocationSettings(this)
-                else -> {
-                    view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                    viewModel.toggleSpeedUnit()
-                    render(viewModel.vehicle.value)
-                }
-            }
-        }
-        binding.gaugeClock.setOnClickListener { openClock() }
-    }
-
-    private fun bindDockActions() {
-        binding.dockStrip.btnAllApps.setOnClickListener { drawer.open() }
-        binding.btnTheme.setOnClickListener { toggleTheme() }
-        // Tap goes to the car / factory settings, long-press to this launcher's own settings -
-        // so the common case stays one tap and the system dock keeps its three fixed actions.
-        binding.btnSettings.setOnClickListener { openVehicleSettings() }
-        binding.btnSettings.setOnLongClickListener {
-            openSettings()
-            true
-        }
-        binding.btnAbout.setOnClickListener { openAbout() }
-    }
-
-    /** Clock, world clock and alarms live in one app; AOSP DeskClock is the fallback. */
-    private fun openClock() {
-        if (IntentUtil.startSafely(this, Intent(AlarmClock.ACTION_SHOW_ALARMS))) return
-        if (IntentUtil.launchPackage(this, "com.android.deskclock")) return
-        toast(getString(R.string.could_not_launch))
-    }
-
-    /**
-     * Head units put the equaliser, steering-wheel learning and CAN / vehicle options in a
-     * vendor app rather than Android Settings, so the button opens whichever app the user
-     * chose (launcher settings), falling back to Android's own Settings.
-     */
-    private fun openVehicleSettings() {
-        Prefs.vehicleSettingsPackage?.let { stored ->
-            if (IntentUtil.launchStored(this, stored, binding.btnSettings)) return
-            Prefs.vehicleSettingsPackage = null   // it was uninstalled
-        }
-        if (!IntentUtil.openSystemSettings(this)) toast(getString(R.string.could_not_launch))
-    }
-
-    /** One-tap day / night switch. "Follow system" remains available in launcher settings. */
-    private fun toggleTheme() {
-        val nightNow = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
-            Configuration.UI_MODE_NIGHT_YES
-        val mode = if (nightNow) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
-        binding.btnTheme.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-        Prefs.themeMode = mode
-        // AppCompat recreates the activity itself; the ViewModel keeps the GPS session alive.
-        AppCompatDelegate.setDefaultNightMode(mode)
-    }
-
-    private fun isMoving(): Boolean = viewModel.vehicle.value.speedMps > MOVING_MPS
-
-    /** A launcher must never finish itself - on some ROMs that leaves a blank screen. */
-    private fun bindBackBehaviour() {
+        binding.btnAllApps.setOnClickListener { drawer.open() }
+        binding.btnRadio.setOnClickListener { openRadio() }
+        binding.btnRadio.setOnLongClickListener { pickRadio(); true }
+        binding.btnSettings.setOnClickListener { openSettings() }
+        binding.headerSettings.setOnClickListener { openSettings() }
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (drawer.isOpen) drawer.close() else map.handleBack()
-            }
+            override fun handleOnBackPressed() { drawer.close() }
         })
-    }
-
-    private fun observe() {
-        val repository = app.appRepository
-
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                repository.apps.collect { apps ->
-                    drawer.submitApps(apps)
-                    dock.bind()
-                    cards.refreshLabels()
+                launch {
+                    app.appRepository.apps.collect {
+                        drawer.submitApps(it)
+                        cards.refreshLabels()
+                    }
                 }
-            }
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                repository.packageRemoved.collect { packageName ->
-                    dock.onPackageRemoved(packageName)
-                    cards.onPackageRemoved(packageName)
-                    if (Prefs.radioPackage == packageName) Prefs.radioPackage = null
-                    if (Prefs.vehicleSettingsPackage?.let { IntentUtil.packageOf(it) } == packageName) {
-                        Prefs.vehicleSettingsPackage = null
+                launch {
+                    app.appRepository.packageRemoved.collect { pkg ->
+                        cards.onPackageRemoved(pkg)
+                        if (Prefs.radioPackage?.let { IntentUtil.packageOf(it) } == pkg) Prefs.radioPackage = null
                     }
                 }
             }
         }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.vehicle.collect { render(it) }
-            }
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                app.radioRepository.state.collect { radioWidget.render(it) }
-            }
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                app.updateRepository.badgeVisible.collect { visible ->
-                    binding.updateBadge.visibility =
-                        if (visible) View.VISIBLE else View.GONE
-                }
-            }
-        }
     }
 
-    // ------------------------------------------------------------- dashboard render
-
-    private fun render(state: VehicleState) {
-        val unit = viewModel.speedUnit.value
-
-        binding.textSpeed.text = Format.speedText(unit, state.speedMps, state.hasFix)
-        binding.textSpeedUnit.text = Format.unitLabel(unit)
-        binding.textSpeedStatus.setText(
-            when {
-                !state.permissionGranted -> R.string.gps_permission_needed
-                !state.gpsEnabled -> R.string.gps_disabled
-                !state.hasFix -> R.string.gps_acquiring
-                else -> R.string.gps_lock
-            }
-        )
-        binding.textSpeedStatus.setTextColor(
-            ContextCompat.getColor(
-                this,
-                when {
-                    !state.permissionGranted || !state.gpsEnabled -> R.color.cockpit_badge
-                    !state.hasFix -> R.color.cockpit_warn
-                    else -> R.color.cockpit_ok
-                }
-            )
-        )
-
-        map.render(state)
-
-        val heading = state.headingDeg
-        if (heading == null) {
-            lastCardinal = null
-            binding.textCardinal.setText(R.string.speed_placeholder)
-            binding.textDegrees.text = ""
-            binding.textHeadingSource.setText(
-                if (viewModel.compassAvailable) R.string.heading else R.string.no_compass
-            )
-        } else {
-            val cardinal = Format.cardinalWithHysteresis(
-                heading, lastCardinal, Prefs.compass16Point
-            )
-            lastCardinal = cardinal
-            binding.textCardinal.text = cardinal
-            binding.textDegrees.text = Format.degreesText(heading)
-            // Showing the source keeps a wrong stationary magnetometer reading from being
-            // mistaken for the truth.
-            binding.textHeadingSource.setText(
-                if (state.headingSource == HeadingSource.GPS) R.string.heading_source_gps
-                else R.string.heading_source_mag
-            )
-        }
+    private fun openRadio() {
+        val stored = Prefs.radioPackage ?: app.appRepository.apps.value.firstOrNull {
+            RadioFrequency.looksLikeRadioPackage(it.packageName) ||
+                it.sortKey == "radio" || it.sortKey == "rádio" ||
+                it.sortKey == "fm" || it.sortKey.startsWith("fm ")
+        }?.packageName
+        if (stored != null && IntentUtil.launchStored(this, stored, binding.btnRadio)) return
+        Prefs.radioPackage = null
+        pickRadio()
     }
 
-    // -------------------------------------------------------------------- dialogs
-
-    private fun openAbout() {
-        AboutDialog.show(this, app.updateRepository) { state ->
-            // Never put an update prompt in front of a driver who is moving.
-            if (viewModel.vehicle.value.speedMps > MOVING_MPS) {
-                toast(getString(R.string.update_deferred_while_driving))
-                return@show
-            }
-            val release = when (state) {
-                is UpdateState.Available -> state.release
-                is UpdateState.ReadyToInstall -> state.release
-                else -> return@show
-            }
-            UpdateDialog.show(this, app.updateRepository, release) {
-                toast(getString(R.string.update_unknown_sources))
-                unknownSources.launch(ApkInstaller.unknownSourcesIntent(this))
-            }
+    private fun pickRadio() {
+        AppPicker.show(this, app.appRepository, lifecycleScope, R.string.pick_radio_app) {
+            Prefs.radioPackage = it.component.flattenToShortString()
         }
     }
 
     private fun openSettings() {
-        SettingsDialog.show(
-            activity = this,
-            repository = app.appRepository,
-            scope = lifecycleScope,
-            onDockReset = { dock.reset() },
-            onPickRadioApp = { radioWidget.pickRadioApp() },
-            onRadioAccess = { radioWidget.requestSessionAccess() },
-            onRadioDiagnostics = { radioWidget.showDiagnostics() },
-            onPrefsChanged = {
-                viewModel.refreshPrefs()
-                lastCardinal = null
-                render(viewModel.vehicle.value)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.l200_settings)
+            .setItems(arrayOf(getString(R.string.pick_radio_app), getString(R.string.l200_home))) { _, index ->
+                when (index) {
+                    0 -> pickRadio()
+                    1 -> IntentUtil.openHomeSettings(this)
+                }
             }
-        )
-    }
-
-    private fun requestLocation() {
-        locationPermission.launch(
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        )
-    }
-
-    // ------------------------------------------------------------------ lifecycle
-
-    override fun onStart() {
-        super.onStart()
-        // Coming back from another app after a while: a driver should never find a stale
-        // search box waiting for them.
-        if (leftAtElapsedMs > 0L &&
-            SystemClock.elapsedRealtime() - leftAtElapsedMs > STALE_RETURN_MS
-        ) {
-            resetToDashboard()
-        }
-        app.updateRepository.maybeCheck()
+            .setPositiveButton(R.string.action_close, null)
+            .show()
     }
 
     override fun onResume() {
         super.onResume()
-        viewModel.start()
-        map.onResume()
-        app.radioRepository.start()
-        viewModel.refreshPrefs()
+        if (leftAt > 0 && SystemClock.elapsedRealtime() - leftAt > 30_000) drawer.reset()
         cards.refreshLabels()
-        render(viewModel.vehicle.value)
-        maybeAutoStartDashcam()
-    }
-
-    /**
-     * Starts the DVR app once per launcher process so its floating overlay comes up on the
-     * dashboard. Deliberately delayed: launching anything before the home screen has drawn
-     * makes a head unit look like it is booting into the wrong app.
-     */
-    private fun maybeAutoStartDashcam() {
-        if (app.dashcamAutoStartDone || !Prefs.dashcamAutoStart) return
-        val stored = Prefs.dashcamPackage ?: return
-        app.dashcamAutoStartDone = true
-
-        binding.root.postDelayed({
-            if (!IntentUtil.launchStored(this, stored, null)) {
-                Prefs.dashcamPackage = null
-                toast(getString(R.string.app_not_installed))
-                return@postDelayed
-            }
-            if (Prefs.dashcamReturnHome) {
-                // Best effort. Android 10+ restricts background activity starts, so some ROMs
-                // will drop this and the user presses HOME once instead.
-                binding.root.postDelayed({ returnToDashboard() }, DASHCAM_RETURN_DELAY_MS)
-            }
-        }, DASHCAM_START_DELAY_MS)
-    }
-
-    private fun returnToDashboard() {
-        val intent = Intent(this, HomeActivity::class.java)
-            .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK)
-        try {
-            startActivity(intent)
-        } catch (e: Exception) {
-            // Blocked by the background-activity-start policy; nothing useful to do.
-        }
     }
 
     override fun onPause() {
+        leftAt = SystemClock.elapsedRealtime()
         super.onPause()
-        // Unregister the moment anything else comes to the foreground - this process is alive
-        // for as long as the head unit is powered.
-        viewModel.stop()
-        map.onPause()
-        app.radioRepository.stop()
-        leftAtElapsedMs = SystemClock.elapsedRealtime()
     }
 
-    override fun onDestroy() {
-        map.onDestroy()
-        super.onDestroy()
-    }
-
-    /** HOME pressed while already home: singleTask re-delivers the intent here. */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (intent.hasCategory(Intent.CATEGORY_HOME)) resetToDashboard()
-    }
-
-    private fun resetToDashboard() {
-        drawer.reset()
-        map.reset()
-    }
-
-    private fun toast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
-    }
-
-    private companion object {
-        /** ~5 km/h. */
-        const val MOVING_MPS = 1.4f
-        const val STALE_RETURN_MS = 30_000L
-        const val DASHCAM_START_DELAY_MS = 1_500L
-        const val DASHCAM_RETURN_DELAY_MS = 3_000L
+        if (intent.hasCategory(Intent.CATEGORY_HOME)) drawer.reset()
     }
 }
